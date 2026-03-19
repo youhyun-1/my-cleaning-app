@@ -4,318 +4,359 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cleanly - 우리집 청소 알리미</title>
-    <!-- 가장 범용적인 unpkg 공식 CDN으로 교체 -->
-    <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700;900&display=swap');
-        body { 
-            font-family: 'Pretendard', sans-serif; 
-            -webkit-tap-highlight-color: transparent;
-            background-color: #F8F9FE;
-            margin: 0;
-        }
+        body { font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; background-color: #F8F9FE; margin: 0; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #2563eb;
+            cursor: pointer;
+            border-radius: 50%;
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        // React 로드 확인 후 실행
-        const initApp = () => {
-            const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo } = React;
 
-            // --- 인라인 SVG 아이콘 (외부 로딩 없음) ---
-            const Icons = {
-                Sparkles: ({ size = 24, className = "" }) => (
-                    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-                        <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
-                    </svg>
-                ),
-                Check: ({ size = 24, className = "" }) => (
-                    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                        <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                ),
-                Trash2: ({ size = 24, className = "" }) => (
-                    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                        <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
-                    </svg>
-                ),
-                Home: ({ size = 24, className = "" }) => (
-                    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                    </svg>
-                ),
-                CloudRain: ({ size = 24, className = "" }) => (
-                    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                        <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/>
-                    </svg>
-                ),
-                Plus: ({ size = 24, className = "" }) => (
-                    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
-                ),
-                X: ({ size = 24, className = "" }) => (
-                    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                ),
-                Sun: ({ size = 24, className = "" }) => (
-                    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                        <circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
-                    </svg>
-                ),
-                Droplets: ({ size = 24, className = "" }) => (
-                    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                        <path d="M7 16.3c2.2 0 4-1.8 4-4 0-3.3-4-6-4-6s-4 2.7-4 6c0 2.2 1.8 4 4 4Z"/><path d="M17 18.5c2.5 0 4.5-2 4.5-4.5 0-3.7-4.5-7-4.5-7s-4.5 3.3-4.5 7c0 2.5 2 4.5 4.5 4.5Z"/>
-                    </svg>
-                ),
-                Wind: ({ size = 24, className = "" }) => (
-                    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                        <path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/>
-                    </svg>
-                )
-            };
-
-            const DAYS_KOR = ['일', '월', '화', '수', '목', '금', '토'];
-            const getTodayString = () => {
-                const now = new Date();
-                return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-            };
-
-            const calculateStatus = (task) => {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                
-                let lastDate = new Date(task.lastCleaned === '2000-01-01' ? '2020-01-01' : task.lastCleaned);
-                lastDate.setHours(0, 0, 0, 0);
-                
-                let nextDate = new Date(lastDate);
-                nextDate.setDate(nextDate.getDate() + (task.frequencyDays || 1));
-                
-                if (task.lastCleaned === '2000-01-01') nextDate = new Date(today);
-
-                const diffTime = nextDate.getTime() - today.getTime();
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                
-                if (diffDays < 0) return { status: 'overdue', days: Math.abs(diffDays) };
-                if (diffDays === 0) return { status: 'today', days: 0 };
-                return { status: 'upcoming', days: diffDays };
-            };
-
-            function App() {
-                const [tasks, setTasks] = useState(() => {
-                    try {
-                        const saved = localStorage.getItem('cleanly_v2_tasks');
-                        return saved ? JSON.parse(saved) : [
-                            { id: 1, name: '거실 청소기 돌리기', frequencyDays: 2, lastCleaned: getTodayString() },
-                            { id: 2, name: '욕실 물때 제거', frequencyDays: 7, lastCleaned: '2020-01-01' }
-                        ];
-                    } catch (e) {
-                        return [];
-                    }
-                });
-
-                const [activeTab, setActiveTab] = useState('home');
-                const [isModalOpen, setIsModalOpen] = useState(false);
-                const [newTaskName, setNewTaskName] = useState('');
-
-                useEffect(() => {
-                    localStorage.setItem('cleanly_v2_tasks', JSON.stringify(tasks));
-                }, [tasks]);
-
-                const sortedTasks = useMemo(() => {
-                    return tasks.map(t => ({ ...t, ...calculateStatus(t) }))
-                                .sort((a, b) => {
-                                    if (a.status === 'overdue' && b.status !== 'overdue') return -1;
-                                    if (b.status === 'overdue' && a.status !== 'overdue') return 1;
-                                    return a.days - b.days;
-                                });
-                }, [tasks]);
-
-                const addTask = () => {
-                    if (!newTaskName.trim()) return;
-                    const newTask = {
-                        id: Date.now(),
-                        name: newTaskName,
-                        frequencyDays: 3,
-                        lastCleaned: '2000-01-01'
-                    };
-                    setTasks([...tasks, newTask]);
-                    setNewTaskName('');
-                    setIsModalOpen(false);
-                };
-
-                const completeTask = (id) => {
-                    setTasks(tasks.map(t => t.id === id ? { ...t, lastCleaned: getTodayString() } : t));
-                };
-
-                const deleteTask = (id) => {
-                    setTasks(tasks.filter(t => t.id !== id));
-                };
-
-                return (
-                    <div className="flex flex-col h-screen max-w-md mx-auto relative overflow-hidden shadow-2xl bg-[#F8F9FE]">
-                        <header className="px-6 pt-12 pb-6 bg-white shrink-0 border-b border-slate-100">
-                            <div className="flex justify-between items-end">
-                                <div>
-                                    <h1 className="text-2xl font-black text-blue-600 flex items-center gap-2">
-                                        <Icons.Sparkles size={28} /> CLEANLY
-                                    </h1>
-                                    <p className="text-[11px] text-slate-400 font-bold mt-1 tracking-wider uppercase">
-                                        {getTodayString()} • {DAYS_KOR[new Date().getDay()]}요일
-                                    </p>
-                                </div>
-                            </div>
-                        </header>
-
-                        <main className="flex-1 overflow-y-auto px-6 pt-6 pb-32 no-scrollbar">
-                            {activeTab === 'home' ? (
-                                <div className="space-y-8">
-                                    <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[32px] p-6 text-white shadow-lg shadow-blue-200">
-                                        <h2 className="text-xl font-bold mb-1">반가워요! 👋</h2>
-                                        <p className="text-sm opacity-90 font-medium">
-                                            오늘 해결할 청소가 {sortedTasks.filter(t => t.status !== 'upcoming').length}개 있습니다.
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-black text-slate-800">청소 목록</h3>
-                                        {sortedTasks.length === 0 ? (
-                                            <div className="text-center py-12 opacity-40 font-bold text-slate-400">
-                                                등록된 청소가 없습니다.
-                                            </div>
-                                        ) : (
-                                            sortedTasks.map(task => (
-                                                <div key={task.id} className="bg-white rounded-[24px] p-5 flex items-center gap-4 border border-slate-50 shadow-sm transition-all active:scale-[0.98]">
-                                                    <div className="flex-1">
-                                                        <h4 className="font-bold text-slate-800 leading-tight">{task.name}</h4>
-                                                        <div className="flex items-center gap-2 mt-1">
-                                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase ${
-                                                                task.status === 'overdue' ? 'bg-red-50 text-red-500' : 
-                                                                task.status === 'today' ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'
-                                                            }`}>
-                                                                {task.status === 'overdue' ? `D+${task.days}` : task.status === 'today' ? 'TODAY' : `D-${task.days}`}
-                                                            </span>
-                                                            <span className="text-[10px] text-slate-300 font-bold">주기: {task.frequencyDays}일</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <button 
-                                                            onClick={() => completeTask(task.id)}
-                                                            className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center active:bg-blue-600 active:text-white transition-colors"
-                                                        >
-                                                            <Icons.Check size={20} />
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => deleteTask(task.id)}
-                                                            className="w-10 h-10 rounded-xl text-slate-200 flex items-center justify-center active:text-red-500 transition-colors"
-                                                        >
-                                                            <Icons.Trash2 size={20} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center pt-12 text-center">
-                                    <div className="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 mb-6">
-                                        <Icons.Sun size={48} />
-                                    </div>
-                                    <h2 className="text-3xl font-black text-slate-800">18°C 맑음</h2>
-                                    <p className="text-slate-500 font-bold mt-2 leading-relaxed">
-                                        공기 질이 아주 좋습니다.<br/>창문을 열고 환기를 시켜보세요!
-                                    </p>
-                                    <div className="mt-10 grid grid-cols-2 gap-4 w-full">
-                                        <div className="bg-white p-5 rounded-3xl border border-slate-50 text-center shadow-sm">
-                                            <Icons.Droplets className="mx-auto text-blue-400 mb-2" size={24} />
-                                            <div className="text-[10px] text-slate-400 font-bold mb-1 uppercase">습도</div>
-                                            <div className="font-black text-slate-800 text-lg">45%</div>
-                                        </div>
-                                        <div className="bg-white p-5 rounded-3xl border border-slate-50 text-center shadow-sm">
-                                            <Icons.Wind className="mx-auto text-emerald-400 mb-2" size={24} />
-                                            <div className="text-[10px] text-slate-400 font-bold mb-1 uppercase">미세먼지</div>
-                                            <div className="font-black text-emerald-500 text-lg">좋음</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </main>
-
-                        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-md-mx-auto bg-white/80 backdrop-blur-xl border-t border-slate-100 px-10 pb-10 pt-4 flex justify-between items-center z-40">
-                            <button onClick={() => setActiveTab('home')} className={`p-2 transition-colors ${activeTab === 'home' ? 'text-blue-600' : 'text-slate-300'}`}>
-                                <Icons.Home size={28} />
-                            </button>
-                            <button 
-                                onClick={() => setIsModalOpen(true)}
-                                className="bg-blue-600 text-white w-14 h-14 rounded-2xl shadow-xl shadow-blue-200 flex items-center justify-center -mt-16 border-[6px] border-[#F8F9FE] active:scale-90 transition-transform"
-                            >
-                                <Icons.Plus size={28} />
-                            </button>
-                            <button onClick={() => setActiveTab('weather')} className={`p-2 transition-colors ${activeTab === 'weather' ? 'text-blue-600' : 'text-slate-300'}`}>
-                                <Icons.CloudRain size={28} />
-                            </button>
-                        </nav>
-
-                        {isModalOpen && (
-                            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end">
-                                <div className="bg-white rounded-t-[40px] p-8 pb-12 animate-slide-up shadow-2xl">
-                                    <div className="flex justify-between items-center mb-8">
-                                        <h3 className="text-2xl font-black text-slate-800">새 청소 추가</h3>
-                                        <button onClick={() => setIsModalOpen(false)} className="text-slate-300 p-1">
-                                            <Icons.X size={24} />
-                                        </button>
-                                    </div>
-                                    <div className="space-y-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-slate-400 uppercase ml-1">항목 이름</label>
-                                            <input 
-                                                value={newTaskName}
-                                                onChange={(e) => setNewTaskName(e.target.value)}
-                                                className="w-full bg-slate-50 rounded-2xl p-5 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" 
-                                                placeholder="예: 창틀 닦기, 에어컨 필터"
-                                            />
-                                        </div>
-                                        <button 
-                                            onClick={addTask}
-                                            className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-lg shadow-lg shadow-blue-100 active:scale-[0.98] transition-all"
-                                        >
-                                            추가하기
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                );
-            }
-
-            const rootElement = document.getElementById('root');
-            if (rootElement) {
-                const root = ReactDOM.createRoot(rootElement);
-                root.render(<App />);
-            }
+        // 안정적인 아이콘 컴포넌트 (SVG 직접 정의)
+        const Icon = {
+            Sparkles: () => (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+            ),
+            Plus: () => (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            ),
+            Trash2: () => (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            ),
+            Sun: () => (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+            ),
+            Calendar: () => (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            ),
+            Repeat: () => (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+            ),
+            Clock: () => (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            ),
+            X: () => (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            ),
+            Check: () => (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            ),
+            Edit2: () => (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+            )
         };
 
-        // DOMContentLoaded 또는 라이브러리 로드 대기를 위한 안전 장치
-        if (document.readyState === 'complete') {
-            initApp();
-        } else {
-            window.addEventListener('load', initApp);
+        const DAYS_KOR = ['일', '월', '화', '수', '목', '금', '토'];
+        
+        const getTodayString = () => {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        };
+
+        const calculateStatus = (task) => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let nextDate;
+
+            if (task.mode === 'once') {
+                nextDate = new Date(task.targetDate || getTodayString());
+            } else if (task.mode === 'weekly') {
+                let checkDate = new Date(task.lastCleaned === '2000-01-01' ? '2020-01-01' : task.lastCleaned);
+                checkDate.setDate(checkDate.getDate() + 1);
+                if (checkDate < today) checkDate = new Date(today);
+                
+                for (let i = 0; i < 14; i++) {
+                    if (task.daysOfWeek?.includes(checkDate.getDay())) {
+                        nextDate = new Date(checkDate);
+                        break;
+                    }
+                    checkDate.setDate(checkDate.getDate() + 1);
+                }
+            } else {
+                const last = new Date(task.lastCleaned === '2000-01-01' ? '2020-01-01' : task.lastCleaned);
+                nextDate = new Date(last);
+                if (task.lastCleaned === '2000-01-01') nextDate = new Date(today);
+                else nextDate.setDate(nextDate.getDate() + Number(task.frequencyDays || 1));
+            }
+            
+            if (!nextDate) nextDate = new Date(today);
+            nextDate.setHours(0,0,0,0);
+            
+            const diffTime = nextDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) return { status: 'overdue', days: Math.abs(diffDays) };
+            if (diffDays === 0) return { status: 'today', days: 0 };
+            return { status: 'upcoming', days: diffDays };
+        };
+
+        function App() {
+            const [tasks, setTasks] = useState(() => {
+                const saved = localStorage.getItem('cleanly-v6-tasks');
+                return saved ? JSON.parse(saved) : [];
+            });
+
+            const [modal, setModal] = useState({ open: false, mode: 'add', targetId: null });
+            const [form, setForm] = useState({
+                name: '',
+                mode: 'interval',
+                frequencyDays: 3,
+                daysOfWeek: [],
+                targetDate: getTodayString()
+            });
+
+            useEffect(() => {
+                localStorage.setItem('cleanly-v6-tasks', JSON.stringify(tasks));
+            }, [tasks]);
+
+            const sortedTasks = useMemo(() => {
+                return tasks.map(t => ({ ...t, ...calculateStatus(t) }))
+                            .sort((a, b) => {
+                                if (a.status === 'overdue' && b.status !== 'overdue') return -1;
+                                if (b.status === 'overdue' && a.status !== 'overdue') return 1;
+                                return a.days - b.days;
+                            });
+            }, [tasks]);
+
+            const handleOpenModal = (mode, task = null) => {
+                if (mode === 'edit' && task) {
+                    setForm({ ...task });
+                    setModal({ open: true, mode: 'edit', targetId: task.id });
+                } else {
+                    setForm({ name: '', mode: 'interval', frequencyDays: 3, daysOfWeek: [], targetDate: getTodayString() });
+                    setModal({ open: true, mode: 'add', targetId: null });
+                }
+            };
+
+            const saveTask = () => {
+                if (!form.name.trim()) return;
+                if (modal.mode === 'add') {
+                    setTasks([...tasks, { ...form, id: Date.now(), lastCleaned: '2000-01-01' }]);
+                } else {
+                    setTasks(tasks.map(t => t.id === modal.targetId ? { ...form, id: t.id, lastCleaned: t.lastCleaned } : t));
+                }
+                setModal({ open: false, mode: 'add', targetId: null });
+            };
+
+            const toggleDay = (day) => {
+                setForm(prev => ({
+                    ...prev,
+                    daysOfWeek: prev.daysOfWeek.includes(day) 
+                        ? prev.daysOfWeek.filter(d => d !== day) 
+                        : [...prev.daysOfWeek, day]
+                }));
+            };
+
+            const completeTask = (id) => {
+                const task = tasks.find(t => t.id === id);
+                if (task.mode === 'once') {
+                    setTasks(tasks.filter(t => t.id !== id));
+                } else {
+                    setTasks(tasks.map(t => t.id === id ? { ...t, lastCleaned: getTodayString() } : t));
+                }
+            };
+
+            return (
+                <div className="flex flex-col h-screen max-w-md mx-auto relative overflow-hidden bg-[#F8F9FE]">
+                    <header className="px-6 pt-12 pb-6 bg-white border-b border-slate-50 shrink-0">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h1 className="text-2xl font-black text-blue-600 flex items-center gap-2">
+                                    <Icon.Sparkles /> CLEANLY
+                                </h1>
+                                <p className="text-[11px] text-slate-400 font-bold uppercase mt-1">
+                                    {getTodayString()} • {DAYS_KOR[new Date().getDay()]}요일
+                                </p>
+                            </div>
+                            <div className="bg-amber-50 px-3 py-2 rounded-2xl flex items-center gap-2 text-amber-600">
+                                <Icon.Sun />
+                                <span className="font-black text-sm text-amber-700">18°C</span>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-y-auto px-6 py-6 pb-32 no-scrollbar">
+                        <div className="space-y-4">
+                            <h2 className="text-lg font-black text-slate-800">청소 관리</h2>
+                            {sortedTasks.length === 0 ? (
+                                <div className="py-20 text-center opacity-30 font-bold">항목을 추가해보세요</div>
+                            ) : (
+                                sortedTasks.map(task => (
+                                    <div key={task.id} className="bg-white rounded-[28px] p-5 shadow-sm border border-slate-100 flex items-center gap-4 active:scale-[0.98] transition-all">
+                                        <div className="flex-1" onClick={() => handleOpenModal('edit', task)}>
+                                            <div className="flex items-center gap-2 text-slate-800">
+                                                <h3 className="font-bold leading-tight">{task.name}</h3>
+                                                <Icon.Edit2 />
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                                                    task.status === 'overdue' ? 'bg-red-50 text-red-500' : 
+                                                    task.status === 'today' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-400'
+                                                }`}>
+                                                    {task.status === 'overdue' ? `지연 D+${task.days}` : task.status === 'today' ? 'TODAY' : `D-${task.days}`}
+                                                </span>
+                                                <span className="text-[10px] text-slate-300 font-bold">
+                                                    {task.mode === 'interval' && `${task.frequencyDays}일 주기`}
+                                                    {task.mode === 'weekly' && `매주 ${task.daysOfWeek.map(d => DAYS_KOR[d]).join(',')}`}
+                                                    {task.mode === 'once' && '일회성'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); completeTask(task.id); }}
+                                            className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-100"
+                                        >
+                                            <Icon.Check />
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </main>
+
+                    <button 
+                        onClick={() => handleOpenModal('add')}
+                        className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-full font-black shadow-2xl flex items-center gap-2 active:scale-95 transition-transform z-40"
+                    >
+                        <Icon.Plus /> 추가하기
+                    </button>
+
+                    {modal.open && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex flex-col justify-end">
+                            <div className="bg-white rounded-t-[40px] p-8 pb-12 animate-slide-up shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-2xl font-black text-slate-800">{modal.mode === 'add' ? '새 청소 추가' : '청소 정보 수정'}</h3>
+                                    <button onClick={() => setModal({ open: false, mode: 'add', targetId: null })} className="text-slate-300"><Icon.X /></button>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-black text-slate-400 ml-1">이름</label>
+                                        <input 
+                                            value={form.name}
+                                            onChange={e => setForm({...form, name: e.target.value})}
+                                            className="w-full bg-slate-50 rounded-2xl p-5 font-bold outline-none focus:ring-2 focus:ring-blue-500" 
+                                            placeholder="예: 욕실 청소, 분리수거"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <label className="text-[11px] font-black text-slate-400 ml-1">반복 모드</label>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {[
+                                                { id: 'interval', label: '주기', icon: <Icon.Clock/> },
+                                                { id: 'weekly', label: '요일', icon: <Icon.Repeat/> },
+                                                { id: 'once', label: '한번', icon: <Icon.Calendar/> }
+                                            ].map(m => (
+                                                <button 
+                                                    key={m.id}
+                                                    onClick={() => setForm({...form, mode: m.id})}
+                                                    className={`py-3 rounded-xl font-bold text-xs flex flex-col items-center gap-1 border-2 transition-all ${
+                                                        form.mode === m.id ? 'bg-blue-50 border-blue-500 text-blue-600' : 'bg-slate-50 border-transparent text-slate-400'
+                                                    }`}
+                                                >
+                                                    {m.icon} {m.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="p-5 bg-slate-50 rounded-[28px]">
+                                        {form.mode === 'interval' && (
+                                            <div className="space-y-4">
+                                                <div className="flex justify-between text-sm font-bold">
+                                                    <span>반복 주기</span>
+                                                    <span className="text-blue-600">{form.frequencyDays}일 마다</span>
+                                                </div>
+                                                <input 
+                                                    type="range" min="1" max="30" 
+                                                    value={form.frequencyDays}
+                                                    onChange={e => setForm({...form, frequencyDays: e.target.value})}
+                                                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                                                />
+                                            </div>
+                                        )}
+                                        {form.mode === 'weekly' && (
+                                            <div className="space-y-3">
+                                                <p className="text-xs font-bold text-slate-500 text-center">반복할 요일을 선택하세요</p>
+                                                <div className="flex justify-between">
+                                                    {DAYS_KOR.map((day, idx) => (
+                                                        <button 
+                                                            key={day}
+                                                            onClick={() => toggleDay(idx)}
+                                                            className={`w-9 h-9 rounded-full font-black text-xs transition-all ${
+                                                                form.daysOfWeek.includes(idx) ? 'bg-blue-600 text-white' : 'bg-white text-slate-300'
+                                                            }`}
+                                                        >
+                                                            {day}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {form.mode === 'once' && (
+                                            <div className="space-y-2">
+                                                <p className="text-xs font-bold text-slate-500">수행할 날짜 선택</p>
+                                                <input 
+                                                    type="date" 
+                                                    value={form.targetDate}
+                                                    onChange={e => setForm({...form, targetDate: e.target.value})}
+                                                    className="w-full p-3 rounded-xl bg-white font-bold outline-none"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex gap-3 pt-4">
+                                        {modal.mode === 'edit' && (
+                                            <button 
+                                                onClick={() => {
+                                                    if(confirm('이 항목을 삭제할까요?')) {
+                                                        setTasks(tasks.filter(t => t.id !== modal.targetId));
+                                                        setModal({ open: false, mode: 'add', targetId: null });
+                                                    }
+                                                }}
+                                                className="bg-red-50 text-red-500 w-16 rounded-2xl flex items-center justify-center"
+                                            >
+                                                <Icon.Trash2 />
+                                            </button>
+                                        )}
+                                        <button 
+                                            onClick={saveTask}
+                                            className="flex-1 bg-blue-600 text-white py-5 rounded-2xl font-black shadow-lg shadow-blue-100"
+                                        >
+                                            {modal.mode === 'add' ? '등록하기' : '수정완료'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
         }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
