@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cleanly - 우리집 청소 알리미</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- 더 안정적인 cdnjs 라이브러리 사용 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700;900&display=swap');
@@ -14,6 +15,7 @@
             font-family: 'Pretendard', sans-serif; 
             -webkit-tap-highlight-color: transparent;
             background-color: #F8F9FE;
+            margin: 0;
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         @keyframes slideUp {
@@ -29,7 +31,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // --- 외부 라이브러리 없이 직접 정의한 SVG 아이콘 컴포넌트 ---
+        // --- 인라인 SVG 아이콘 (외부 로딩 없음) ---
         const Icons = {
             Sparkles: ({ size = 24, className = "" }) => (
                 <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -84,7 +86,6 @@
             )
         };
 
-        // --- Helpers ---
         const DAYS_KOR = ['일', '월', '화', '수', '목', '금', '토'];
         const getTodayString = () => {
             const now = new Date();
@@ -111,14 +112,17 @@
             return { status: 'upcoming', days: diffDays };
         };
 
-        // --- App Component ---
         function App() {
             const [tasks, setTasks] = useState(() => {
-                const saved = localStorage.getItem('cleanly_v2_tasks');
-                return saved ? JSON.parse(saved) : [
-                    { id: 1, name: '거실 청소기 돌리기', frequencyDays: 2, lastCleaned: getTodayString() },
-                    { id: 2, name: '욕실 물때 제거', frequencyDays: 7, lastCleaned: '2020-01-01' }
-                ];
+                try {
+                    const saved = localStorage.getItem('cleanly_v2_tasks');
+                    return saved ? JSON.parse(saved) : [
+                        { id: 1, name: '거실 청소기 돌리기', frequencyDays: 2, lastCleaned: getTodayString() },
+                        { id: 2, name: '욕실 물때 제거', frequencyDays: 7, lastCleaned: '2020-01-01' }
+                    ];
+                } catch (e) {
+                    return [];
+                }
             });
 
             const [activeTab, setActiveTab] = useState('home');
@@ -161,7 +165,6 @@
 
             return (
                 <div className="flex flex-col h-screen max-w-md mx-auto relative overflow-hidden shadow-2xl bg-[#F8F9FE]">
-                    {/* Header */}
                     <header className="px-6 pt-12 pb-6 bg-white shrink-0 border-b border-slate-100">
                         <div className="flex justify-between items-end">
                             <div>
@@ -175,11 +178,9 @@
                         </div>
                     </header>
 
-                    {/* Main Content */}
                     <main className="flex-1 overflow-y-auto px-6 pt-6 pb-32 no-scrollbar">
                         {activeTab === 'home' ? (
                             <div className="space-y-8">
-                                {/* Dashboard Card */}
                                 <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[32px] p-6 text-white shadow-lg shadow-blue-200">
                                     <h2 className="text-xl font-bold mb-1">반가워요! 👋</h2>
                                     <p className="text-sm opacity-90 font-medium">
@@ -187,7 +188,6 @@
                                     </p>
                                 </div>
 
-                                {/* Task Section */}
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-black text-slate-800">청소 목록</h3>
                                     {sortedTasks.length === 0 ? (
@@ -251,7 +251,6 @@
                         )}
                     </main>
 
-                    {/* Bottom Nav */}
                     <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/80 backdrop-blur-xl border-t border-slate-100 px-10 pb-10 pt-4 flex justify-between items-center z-40">
                         <button onClick={() => setActiveTab('home')} className={`p-2 transition-colors ${activeTab === 'home' ? 'text-blue-600' : 'text-slate-300'}`}>
                             <Icons.Home size={28} />
@@ -267,7 +266,6 @@
                         </button>
                     </nav>
 
-                    {/* Modal */}
                     {isModalOpen && (
                         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end">
                             <div className="bg-white rounded-t-[40px] p-8 pb-12 animate-slide-up shadow-2xl">
@@ -301,8 +299,14 @@
             );
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        // DOM이 완전히 로드된 후 실행되도록 보장
+        window.onload = () => {
+            const rootElement = document.getElementById('root');
+            if (rootElement) {
+                const root = ReactDOM.createRoot(rootElement);
+                root.render(<App />);
+            }
+        };
     </script>
 </body>
 </html>
