@@ -15,15 +15,9 @@
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .progress-bar { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            background: #2563eb;
-            cursor: pointer;
-            border-radius: 50%;
-        }
+        /* Remove arrows from number input */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body>
@@ -59,12 +53,6 @@
             ),
             Check: () => (
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            ),
-            History: () => (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
-            ),
-            Lightbulb: () => (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
             ),
             Refresh: () => (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
@@ -150,12 +138,12 @@
 
         function App() {
             const [tasks, setTasks] = useState(() => {
-                const saved = localStorage.getItem('cleanly-v11-tasks');
+                const saved = localStorage.getItem('cleanly-v12-tasks');
                 return saved ? JSON.parse(saved) : [];
             });
 
             const [history, setHistory] = useState(() => {
-                const saved = localStorage.getItem('cleanly-v11-history');
+                const saved = localStorage.getItem('cleanly-v12-history');
                 return saved ? JSON.parse(saved) : [];
             });
 
@@ -164,20 +152,19 @@
             const [form, setForm] = useState({
                 name: '',
                 mode: 'interval',
-                frequencyDays: 3,
+                frequencyDays: 7,
                 daysOfWeek: [],
                 targetDate: getTodayString()
             });
 
-            // 추천 청소 랜덤 상태
             const [randomSeed, setRandomSeed] = useState(Date.now());
 
             useEffect(() => {
-                localStorage.setItem('cleanly-v11-tasks', JSON.stringify(tasks));
+                localStorage.setItem('cleanly-v12-tasks', JSON.stringify(tasks));
             }, [tasks]);
 
             useEffect(() => {
-                localStorage.setItem('cleanly-v11-history', JSON.stringify(history));
+                localStorage.setItem('cleanly-v12-history', JSON.stringify(history));
             }, [history]);
 
             const sortedTasks = useMemo(() => {
@@ -189,12 +176,9 @@
                             });
             }, [tasks]);
 
-            // 필터링 및 랜덤 추출 로직
             const currentRecommendations = useMemo(() => {
                 const existingNames = tasks.map(t => t.name);
                 const filtered = MASTER_RECOMMENDATIONS.filter(rec => !existingNames.includes(rec.name));
-                
-                // 간단한 셔플 알고리즘
                 const shuffled = [...filtered].sort(() => 0.5 - Math.random());
                 return shuffled.slice(0, 3);
             }, [tasks, randomSeed]);
@@ -204,27 +188,17 @@
                                       .filter(t => t.status === 'today' || t.status === 'overdue');
                 if (todayTasks.length === 0 && tasks.length > 0) return 100;
                 if (tasks.length === 0) return 0;
-                
                 const completedTodayCount = tasks.filter(t => t.lastCleaned === getTodayString()).length;
                 const totalTarget = todayTasks.length + completedTodayCount;
-                
                 return Math.round((completedTodayCount / totalTarget) * 100);
             }, [tasks]);
-
-            const getGreeting = () => {
-                const hour = new Date().getHours();
-                if (progress === 100 && tasks.length > 0) return "오늘의 청소 완벽해요! ✨";
-                if (hour < 12) return "상쾌한 아침이에요! ☀️";
-                if (hour < 18) return "기분 좋은 오후네요! 🌿";
-                return "포근한 저녁 시간이에요! 🌙";
-            };
 
             const handleOpenModal = (mode, task = null) => {
                 if (mode === 'edit' && task) {
                     setForm({ ...task });
                     setModal({ open: true, mode: 'edit', targetId: task.id });
                 } else {
-                    setForm({ name: '', mode: 'interval', frequencyDays: 3, daysOfWeek: [], targetDate: getTodayString() });
+                    setForm({ name: '', mode: 'interval', frequencyDays: 7, daysOfWeek: [], targetDate: getTodayString() });
                     setModal({ open: true, mode: 'add', targetId: null });
                 }
             };
@@ -241,53 +215,23 @@
                 setModal({ open: false, mode: 'add', targetId: null });
             };
 
-            const toggleDay = (day) => {
-                setForm(prev => ({
-                    ...prev,
-                    daysOfWeek: prev.daysOfWeek.includes(day) 
-                        ? prev.daysOfWeek.filter(d => d !== day) 
-                        : [...prev.daysOfWeek, day]
-                }));
-            };
-
             const completeTask = (id) => {
                 const task = tasks.find(t => t.id === id);
                 const now = new Date();
                 const timeString = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-                
-                const newHistoryItem = {
-                    id: Date.now(),
-                    taskName: task.name,
-                    date: getTodayString(),
-                    time: timeString
-                };
-                setHistory([newHistoryItem, ...history].slice(0, 50));
-
-                if (task.mode === 'once') {
-                    setTasks(tasks.filter(t => t.id !== id));
-                } else {
-                    setTasks(tasks.map(t => t.id === id ? { ...t, lastCleaned: getTodayString() } : t));
-                }
+                setHistory([{ id: Date.now(), taskName: task.name, date: getTodayString(), time: timeString }, ...history].slice(0, 50));
+                if (task.mode === 'once') setTasks(tasks.filter(t => t.id !== id));
+                else setTasks(tasks.map(t => t.id === id ? { ...t, lastCleaned: getTodayString() } : t));
             };
 
-            const deleteHistory = (id) => {
-                setHistory(history.filter(h => h.id !== id));
-            };
-
-            const addRecommended = (rec) => {
-                const newTask = {
-                    name: rec.name,
-                    mode: rec.mode,
-                    frequencyDays: rec.frequencyDays,
-                    daysOfWeek: [],
-                    targetDate: getTodayString()
-                };
-                saveTask(newTask);
-            };
-
-            const refreshRecs = () => {
-                setRandomSeed(Date.now());
-            };
+            const PRESETS = [
+                { label: '3일', value: 3 },
+                { label: '1주일', value: 7 },
+                { label: '2주일', value: 14 },
+                { label: '1개월', value: 30 },
+                { label: '3개월', value: 90 },
+                { label: '6개월', value: 180 }
+            ];
 
             return (
                 <div className="flex flex-col h-screen max-w-md mx-auto relative overflow-hidden bg-[#F8F9FE]">
@@ -299,11 +243,11 @@
                             </h1>
                             <div className="bg-amber-50 px-3 py-1.5 rounded-full flex items-center gap-2 text-amber-600 border border-amber-100/50">
                                 <Icon.Sun />
-                                <span className="font-black text-xs">쾌적함 지수 85%</span>
+                                <span className="font-black text-xs">쾌적함 85%</span>
                             </div>
                         </div>
                         
-                        <div className="flex justify-between items-end mb-4">
+                        <div className="flex justify-between items-end">
                             <div className="space-y-1">
                                 <p className="text-4xl font-black text-slate-900 tracking-tight">
                                     {new Date().getDate()}<span className="text-lg text-slate-400 ml-1">일</span>
@@ -319,175 +263,113 @@
                                 </div>
                             </div>
                         </div>
-                        
-                        <p className="text-sm font-bold text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-100/50">
-                            {getGreeting()}
-                        </p>
                     </header>
 
-                    {/* Tabs */}
+                    {/* Navigation */}
                     <nav className="flex px-6 mt-6 gap-3 shrink-0">
-                        <button 
-                            onClick={() => setView('main')}
-                            className={`flex-1 py-3.5 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 ${view === 'main' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-white text-slate-400 border border-slate-100'}`}
-                        >
-                            할 일
-                        </button>
-                        <button 
-                            onClick={() => setView('history')}
-                            className={`flex-1 py-3.5 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 ${view === 'history' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-white text-slate-400 border border-slate-100'}`}
-                        >
-                            기록
-                        </button>
+                        <button onClick={() => setView('main')} className={`flex-1 py-3.5 rounded-2xl font-black text-sm transition-all ${view === 'main' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-white text-slate-400 border border-slate-100'}`}>할 일</button>
+                        <button onClick={() => setView('history')} className={`flex-1 py-3.5 rounded-2xl font-black text-sm transition-all ${view === 'history' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-white text-slate-400 border border-slate-100'}`}>기록</button>
                     </nav>
 
+                    {/* Content Area */}
                     <main className="flex-1 overflow-y-auto px-6 py-6 pb-32 no-scrollbar">
                         {view === 'main' ? (
                             <div className="space-y-8">
-                                {/* Task List Section */}
                                 <section className="space-y-4">
-                                    <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest px-1">오늘 할 청소</h2>
+                                    <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest px-1">오늘의 청소</h2>
                                     {sortedTasks.length === 0 ? (
-                                        <div className="py-12 text-center bg-white rounded-[32px] border border-dashed border-slate-200">
-                                            <p className="opacity-30 font-bold text-sm">등록된 청소가 없습니다</p>
-                                        </div>
+                                        <div className="py-12 text-center bg-white rounded-[32px] border border-dashed border-slate-200 opacity-40 font-bold">등록된 청소가 없습니다</div>
                                     ) : (
                                         sortedTasks.map(task => (
-                                            <div key={task.id} className={`bg-white rounded-[32px] p-6 shadow-sm border transition-all flex items-center gap-4 active:scale-[0.98] ${task.status === 'overdue' ? 'border-red-100' : 'border-slate-100'}`}>
-                                                <div className="flex-1" onClick={() => handleOpenModal('edit', task)}>
+                                            <div key={task.id} className="bg-white rounded-[32px] p-6 shadow-sm border border-slate-100 flex items-center gap-4 active:scale-[0.98] transition-all" onClick={() => handleOpenModal('edit', task)}>
+                                                <div className="flex-1">
                                                     <h3 className="font-black text-[17px] text-slate-800 leading-tight mb-2">{task.name}</h3>
                                                     <div className="flex items-center gap-2">
-                                                        <span className={`text-[10px] px-2 py-1 rounded-full font-black ${
-                                                            task.status === 'overdue' ? 'bg-red-50 text-red-500' : 
-                                                            task.status === 'today' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'
-                                                        }`}>
+                                                        <span className={`text-[10px] px-2 py-1 rounded-full font-black ${task.status === 'overdue' ? 'bg-red-50 text-red-500' : task.status === 'today' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
                                                             {task.status === 'overdue' ? `지연 D+${task.days}` : task.status === 'today' ? '오늘' : `D-${task.days}`}
                                                         </span>
                                                         <span className="text-[10px] text-slate-300 font-bold flex items-center gap-1">
-                                                            <Icon.Clock />
-                                                            {task.mode === 'interval' && `${task.frequencyDays}일 주기`}
-                                                            {task.mode === 'weekly' && `매주 ${task.daysOfWeek.map(d => DAYS_KOR[d]).join(',')}`}
-                                                            {task.mode === 'once' && '일회성'}
+                                                            <Icon.Clock /> {task.mode === 'interval' ? `${task.frequencyDays}일 주기` : task.mode === 'weekly' ? '요일별' : '한 번'}
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); completeTask(task.id); }}
-                                                    className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all ${
-                                                        task.status === 'overdue' ? 'bg-red-500 text-white shadow-red-100' : 'bg-blue-600 text-white shadow-blue-100'
-                                                    }`}
-                                                >
-                                                    <Icon.Check />
-                                                </button>
+                                                <button onClick={(e) => { e.stopPropagation(); completeTask(task.id); }} className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg bg-blue-600 text-white shadow-blue-100"><Icon.Check /></button>
                                             </div>
                                         ))
                                     )}
                                 </section>
 
-                                {/* Recommendation Section */}
                                 <section className="space-y-4">
                                     <div className="flex items-center justify-between px-1">
-                                        <div className="flex items-center gap-2">
-                                            <Icon.Lightbulb />
-                                            <h2 className="text-sm font-black text-slate-700">잊기 쉬운 곳 추천</h2>
+                                        <h2 className="text-sm font-black text-slate-700">추천 청소</h2>
+                                        <button onClick={() => setRandomSeed(Date.now())} className="text-[11px] font-black text-blue-500 flex items-center gap-1"><Icon.Refresh /> 새로고침</button>
+                                    </div>
+                                    {currentRecommendations.map((rec, i) => (
+                                        <div key={i} className="bg-white rounded-[24px] p-5 border border-slate-100 flex items-center gap-4">
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="text-[15px] font-black text-slate-800 truncate mb-1">{rec.name}</h4>
+                                                <p className="text-[11px] text-slate-400 font-medium truncate">{rec.desc}</p>
+                                            </div>
+                                            <button onClick={() => saveTask({ ...rec, id: Date.now(), lastCleaned: '2000-01-01' })} className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center"><Icon.Plus /></button>
                                         </div>
-                                        <button onClick={refreshRecs} className="flex items-center gap-1 text-[11px] font-black text-blue-500 active:rotate-180 transition-transform duration-500">
-                                            <Icon.Refresh /> 새로고침
-                                        </button>
-                                    </div>
-                                    <div className="flex flex-col gap-3">
-                                        {currentRecommendations.length === 0 ? (
-                                            <p className="text-center py-4 text-xs font-bold text-slate-300">모든 추천 항목을 등록하셨네요! 대단해요!</p>
-                                        ) : (
-                                            currentRecommendations.map((rec, i) => (
-                                                <div key={i} className="bg-white rounded-[24px] p-5 border border-slate-100 flex items-center gap-4 shadow-sm">
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <h4 className="text-[15px] font-black text-slate-800 truncate">{rec.name}</h4>
-                                                            <span className="bg-blue-50 text-blue-600 text-[9px] px-1.5 py-0.5 rounded font-bold whitespace-nowrap">{rec.frequencyDays}일 주기</span>
-                                                        </div>
-                                                        <p className="text-[11px] text-slate-400 font-medium truncate">{rec.desc}</p>
-                                                    </div>
-                                                    <button 
-                                                        onClick={() => addRecommended(rec)}
-                                                        className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-sm border border-blue-100 active:scale-90 transition-transform"
-                                                    >
-                                                        <Icon.Plus />
-                                                    </button>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
+                                    ))}
                                 </section>
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest px-1">활동 기록</h2>
-                                {history.length === 0 ? (
-                                    <div className="py-20 text-center opacity-30 font-bold">아직 기록이 없습니다</div>
-                                ) : (
-                                    history.map(h => (
-                                        <div key={h.id} className="bg-white rounded-2xl p-4 flex items-center gap-4 border border-slate-100">
-                                            <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-500">
-                                                <Icon.Check />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="text-sm font-black text-slate-800">{h.taskName}</h4>
-                                                <p className="text-[10px] text-slate-400 font-medium mt-0.5">{h.date} • {h.time}</p>
-                                            </div>
-                                            <button onClick={() => deleteHistory(h.id)} className="text-slate-200 p-2 hover:text-red-400 transition-colors">
-                                                <Icon.Trash2 />
-                                            </button>
+                                {history.map(h => (
+                                    <div key={h.id} className="bg-white rounded-2xl p-4 flex items-center gap-4 border border-slate-100">
+                                        <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-500"><Icon.Check /></div>
+                                        <div className="flex-1">
+                                            <h4 className="text-sm font-black text-slate-800">{h.taskName}</h4>
+                                            <p className="text-[10px] text-slate-400 font-medium mt-0.5">{h.date} • {h.time}</p>
                                         </div>
-                                    ))
-                                )}
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </main>
 
                     {/* Floating Button */}
                     {view === 'main' && (
-                        <button 
-                            onClick={() => handleOpenModal('add')}
-                            className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-full font-black shadow-2xl flex items-center gap-2 active:scale-95 transition-transform z-40"
-                        >
+                        <button onClick={() => handleOpenModal('add')} className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-full font-black shadow-2xl flex items-center gap-2 active:scale-95 transition-transform z-40">
                             <Icon.Plus /> 직접 추가
                         </button>
                     )}
 
-                    {/* Modal */}
+                    {/* Improved Modal */}
                     {modal.open && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex flex-col justify-end">
-                            <div className="bg-white rounded-t-[40px] p-8 pb-12 animate-slide-up shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-2xl font-black text-slate-800">{modal.mode === 'add' ? '새 청소' : '청소 정보 수정'}</h3>
+                            <div className="bg-white rounded-t-[40px] p-8 pb-10 animate-slide-up shadow-2xl max-h-[92vh] overflow-y-auto no-scrollbar">
+                                <div className="flex justify-between items-center mb-8">
+                                    <h3 className="text-2xl font-black text-slate-800">{modal.mode === 'add' ? '새 청소 추가' : '정보 수정'}</h3>
                                     <button onClick={() => setModal({ open: false, mode: 'add', targetId: null })} className="text-slate-300"><Icon.X /></button>
                                 </div>
 
                                 <div className="space-y-8">
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-slate-400 ml-1 uppercase">무엇을 청소할까요?</label>
+                                    <div className="space-y-3">
+                                        <label className="text-[11px] font-black text-slate-400 ml-1 uppercase">청소 항목 이름</label>
                                         <input 
                                             value={form.name}
                                             onChange={e => setForm({...form, name: e.target.value})}
-                                            className="w-full bg-slate-50 rounded-2xl p-5 font-bold outline-none focus:ring-2 focus:ring-blue-500 border border-transparent" 
+                                            className="w-full bg-slate-50 rounded-2xl p-5 font-bold outline-none border-2 border-transparent focus:border-blue-500 transition-all" 
                                             placeholder="예: 싱크대 하부장 정리"
                                         />
                                     </div>
 
-                                    <div className="space-y-3">
-                                        <label className="text-[11px] font-black text-slate-400 ml-1 uppercase">언제 할까요?</label>
-                                        <div className="grid grid-cols-3 gap-2">
+                                    <div className="space-y-4">
+                                        <label className="text-[11px] font-black text-slate-400 ml-1 uppercase">수행 방식</label>
+                                        <div className="flex bg-slate-50 p-1.5 rounded-2xl">
                                             {[
-                                                { id: 'interval', label: '주기적', icon: <Icon.Clock/> },
-                                                { id: 'weekly', label: '요일별', icon: <Icon.Repeat/> },
-                                                { id: 'once', label: '이번만', icon: <Icon.Calendar/> }
+                                                { id: 'interval', label: '주기형', icon: <Icon.Clock/> },
+                                                { id: 'weekly', label: '요일형', icon: <Icon.Repeat/> },
+                                                { id: 'once', label: '일회성', icon: <Icon.Calendar/> }
                                             ].map(m => (
                                                 <button 
                                                     key={m.id}
                                                     onClick={() => setForm({...form, mode: m.id})}
-                                                    className={`py-4 rounded-2xl font-bold text-xs flex flex-col items-center gap-1.5 border-2 transition-all ${
-                                                        form.mode === m.id ? 'bg-blue-50 border-blue-500 text-blue-600' : 'bg-slate-50 border-transparent text-slate-400'
+                                                    className={`flex-1 py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all ${
+                                                        form.mode === m.id ? 'bg-white text-blue-600 shadow-md' : 'text-slate-400'
                                                     }`}
                                                 >
                                                     {m.icon} {m.label}
@@ -496,31 +378,57 @@
                                         </div>
                                     </div>
 
+                                    {/* Detailed Settings Area */}
                                     <div className="p-6 bg-slate-50 rounded-[32px] border border-slate-100">
                                         {form.mode === 'interval' && (
-                                            <div className="space-y-4">
-                                                <div className="flex justify-between text-sm font-black text-slate-700">
-                                                    <span>수행 주기</span>
-                                                    <span className="text-blue-600">{form.frequencyDays}일 마다</span>
+                                            <div className="space-y-6">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm font-black text-slate-600">수행 주기 설정</span>
+                                                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200">
+                                                        <input 
+                                                            type="number"
+                                                            value={form.frequencyDays}
+                                                            onChange={e => setForm({...form, frequencyDays: e.target.value})}
+                                                            className="w-12 text-center font-black text-blue-600 outline-none"
+                                                        />
+                                                        <span className="text-xs font-bold text-slate-400">일 마다</span>
+                                                    </div>
                                                 </div>
-                                                <input 
-                                                    type="range" min="1" max="365" 
-                                                    value={form.frequencyDays}
-                                                    onChange={e => setForm({...form, frequencyDays: e.target.value})}
-                                                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                                                />
+                                                
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {PRESETS.map(p => (
+                                                        <button 
+                                                            key={p.value}
+                                                            onClick={() => setForm({...form, frequencyDays: p.value})}
+                                                            className={`py-3 rounded-xl text-xs font-bold transition-all border ${
+                                                                Number(form.frequencyDays) === p.value 
+                                                                ? 'bg-blue-600 border-blue-600 text-white shadow-md' 
+                                                                : 'bg-white border-slate-200 text-slate-500'
+                                                            }`}
+                                                        >
+                                                            {p.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <p className="text-[10px] text-center text-slate-400 font-medium">자주 쓰는 주기를 누르거나 숫자를 직접 수정하세요</p>
                                             </div>
                                         )}
+
                                         {form.mode === 'weekly' && (
                                             <div className="space-y-4">
-                                                <p className="text-xs font-bold text-slate-500 text-center">반복할 요일</p>
+                                                <p className="text-xs font-bold text-slate-500 text-center">반복할 요일을 선택하세요</p>
                                                 <div className="flex justify-between">
                                                     {DAYS_KOR.map((day, idx) => (
                                                         <button 
                                                             key={day}
-                                                            onClick={() => toggleDay(idx)}
+                                                            onClick={() => {
+                                                                const days = form.daysOfWeek.includes(idx) 
+                                                                    ? form.daysOfWeek.filter(d => d !== idx) 
+                                                                    : [...form.daysOfWeek, idx];
+                                                                setForm({...form, daysOfWeek: days});
+                                                            }}
                                                             className={`w-10 h-10 rounded-full font-black text-xs transition-all ${
-                                                                form.daysOfWeek.includes(idx) ? 'bg-blue-600 text-white shadow-md shadow-blue-100' : 'bg-white text-slate-300'
+                                                                form.daysOfWeek.includes(idx) ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-slate-300 border border-slate-100'
                                                             }`}
                                                         >
                                                             {day}
@@ -529,27 +437,28 @@
                                                 </div>
                                             </div>
                                         )}
+
                                         {form.mode === 'once' && (
-                                            <div className="space-y-2">
-                                                <p className="text-xs font-bold text-slate-500">지정 날짜</p>
+                                            <div className="space-y-3">
+                                                <p className="text-xs font-bold text-slate-500">목표 날짜</p>
                                                 <input 
                                                     type="date" 
                                                     value={form.targetDate}
                                                     onChange={e => setForm({...form, targetDate: e.target.value})}
-                                                    className="w-full p-4 rounded-xl bg-white font-bold outline-none border border-slate-100 text-slate-700"
+                                                    className="w-full p-4 rounded-xl bg-white font-bold outline-none border border-slate-200 text-slate-700"
                                                 />
                                             </div>
                                         )}
                                     </div>
 
-                                    <div className="flex gap-3 pt-4">
+                                    <div className="flex gap-3 pt-2">
                                         {modal.mode === 'edit' && (
                                             <button 
                                                 onClick={() => {
                                                     setTasks(tasks.filter(t => t.id !== modal.targetId));
                                                     setModal({ open: false, mode: 'add', targetId: null });
                                                 }}
-                                                className="bg-red-50 text-red-500 w-16 rounded-2xl flex items-center justify-center border border-red-100 active:bg-red-100"
+                                                className="bg-red-50 text-red-500 px-6 rounded-2xl border border-red-100 active:bg-red-100 transition-colors"
                                             >
                                                 <Icon.Trash2 />
                                             </button>
@@ -558,7 +467,7 @@
                                             onClick={() => saveTask()}
                                             className="flex-1 bg-blue-600 text-white py-5 rounded-2xl font-black shadow-xl shadow-blue-100 active:scale-[0.98] transition-all"
                                         >
-                                            {modal.mode === 'add' ? '등록하기' : '변경내용 저장'}
+                                            {modal.mode === 'add' ? '등록 완료' : '저장 완료'}
                                         </button>
                                     </div>
                                 </div>
