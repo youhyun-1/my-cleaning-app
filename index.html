@@ -31,7 +31,6 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // 안정적인 아이콘 컴포넌트 (SVG 직접 정의)
         const Icon = {
             Sparkles: () => (
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
@@ -62,6 +61,9 @@
             ),
             Edit2: () => (
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+            ),
+            History: () => (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
             )
         };
 
@@ -111,10 +113,16 @@
 
         function App() {
             const [tasks, setTasks] = useState(() => {
-                const saved = localStorage.getItem('cleanly-v6-tasks');
+                const saved = localStorage.getItem('cleanly-v7-tasks');
                 return saved ? JSON.parse(saved) : [];
             });
 
+            const [history, setHistory] = useState(() => {
+                const saved = localStorage.getItem('cleanly-v7-history');
+                return saved ? JSON.parse(saved) : [];
+            });
+
+            const [view, setView] = useState('main'); // 'main' or 'history'
             const [modal, setModal] = useState({ open: false, mode: 'add', targetId: null });
             const [form, setForm] = useState({
                 name: '',
@@ -125,8 +133,12 @@
             });
 
             useEffect(() => {
-                localStorage.setItem('cleanly-v6-tasks', JSON.stringify(tasks));
+                localStorage.setItem('cleanly-v7-tasks', JSON.stringify(tasks));
             }, [tasks]);
+
+            useEffect(() => {
+                localStorage.setItem('cleanly-v7-history', JSON.stringify(history));
+            }, [history]);
 
             const sortedTasks = useMemo(() => {
                 return tasks.map(t => ({ ...t, ...calculateStatus(t) }))
@@ -168,6 +180,18 @@
 
             const completeTask = (id) => {
                 const task = tasks.find(t => t.id === id);
+                const now = new Date();
+                const timeString = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+                
+                // 이력 추가
+                const newHistoryItem = {
+                    id: Date.now(),
+                    taskName: task.name,
+                    date: getTodayString(),
+                    time: timeString
+                };
+                setHistory([newHistoryItem, ...history].slice(0, 50)); // 최근 50개까지만 유지
+
                 if (task.mode === 'once') {
                     setTasks(tasks.filter(t => t.id !== id));
                 } else {
@@ -175,71 +199,131 @@
                 }
             };
 
+            const deleteHistory = (id) => {
+                setHistory(history.filter(h => h.id !== id));
+            };
+
             return (
                 <div className="flex flex-col h-screen max-w-md mx-auto relative overflow-hidden bg-[#F8F9FE]">
-                    <header className="px-6 pt-12 pb-6 bg-white border-b border-slate-50 shrink-0">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <h1 className="text-2xl font-black text-blue-600 flex items-center gap-2">
-                                    <Icon.Sparkles /> CLEANLY
-                                </h1>
-                                <p className="text-[11px] text-slate-400 font-bold uppercase mt-1">
-                                    {getTodayString()} • {DAYS_KOR[new Date().getDay()]}요일
-                                </p>
-                            </div>
-                            <div className="bg-amber-50 px-3 py-2 rounded-2xl flex items-center gap-2 text-amber-600">
+                    {/* 상단 헤더: 날짜 강조 */}
+                    <header className="px-6 pt-10 pb-8 bg-white border-b border-slate-50 shrink-0 shadow-sm rounded-b-[40px] z-10">
+                        <div className="flex justify-between items-center mb-6">
+                            <h1 className="text-xl font-black text-blue-600 flex items-center gap-1.5 tracking-tighter">
+                                <Icon.Sparkles /> CLEANLY
+                            </h1>
+                            <div className="bg-amber-50 px-3 py-1.5 rounded-full flex items-center gap-2 text-amber-600 border border-amber-100/50">
                                 <Icon.Sun />
-                                <span className="font-black text-sm text-amber-700">18°C</span>
+                                <span className="font-black text-xs">18°C</span>
                             </div>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-4xl font-black text-slate-900 tracking-tight">
+                                {new Date().getDate()}<span className="text-lg text-slate-400 ml-1">일</span>
+                            </p>
+                            <p className="text-sm font-bold text-slate-400 flex items-center gap-2 uppercase">
+                                {new Date().getFullYear()}년 {new Date().getMonth() + 1}월 • {DAYS_KOR[new Date().getDay()]}요일
+                            </p>
                         </div>
                     </header>
 
+                    {/* 뷰 전환 탭 */}
+                    <nav className="flex px-6 mt-6 gap-4 shrink-0">
+                        <button 
+                            onClick={() => setView('main')}
+                            className={`flex-1 py-3 rounded-2xl font-black text-sm transition-all ${view === 'main' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-white text-slate-400 border border-slate-100'}`}
+                        >
+                            할 일
+                        </button>
+                        <button 
+                            onClick={() => setView('history')}
+                            className={`flex-1 py-3 rounded-2xl font-black text-sm transition-all ${view === 'history' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-white text-slate-400 border border-slate-100'}`}
+                        >
+                            기록
+                        </button>
+                    </nav>
+
                     <main className="flex-1 overflow-y-auto px-6 py-6 pb-32 no-scrollbar">
-                        <div className="space-y-4">
-                            <h2 className="text-lg font-black text-slate-800">청소 관리</h2>
-                            {sortedTasks.length === 0 ? (
-                                <div className="py-20 text-center opacity-30 font-bold">항목을 추가해보세요</div>
-                            ) : (
-                                sortedTasks.map(task => (
-                                    <div key={task.id} className="bg-white rounded-[28px] p-5 shadow-sm border border-slate-100 flex items-center gap-4 active:scale-[0.98] transition-all">
-                                        <div className="flex-1" onClick={() => handleOpenModal('edit', task)}>
-                                            <div className="flex items-center gap-2 text-slate-800">
-                                                <h3 className="font-bold leading-tight">{task.name}</h3>
-                                                <Icon.Edit2 />
-                                            </div>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
-                                                    task.status === 'overdue' ? 'bg-red-50 text-red-500' : 
-                                                    task.status === 'today' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-400'
-                                                }`}>
-                                                    {task.status === 'overdue' ? `지연 D+${task.days}` : task.status === 'today' ? 'TODAY' : `D-${task.days}`}
-                                                </span>
-                                                <span className="text-[10px] text-slate-300 font-bold">
-                                                    {task.mode === 'interval' && `${task.frequencyDays}일 주기`}
-                                                    {task.mode === 'weekly' && `매주 ${task.daysOfWeek.map(d => DAYS_KOR[d]).join(',')}`}
-                                                    {task.mode === 'once' && '일회성'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); completeTask(task.id); }}
-                                            className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-100"
-                                        >
+                        {view === 'main' ? (
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center px-1">
+                                    <h2 className="text-lg font-black text-slate-800">청소 목록</h2>
+                                    <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded-full">{sortedTasks.length}개 남음</span>
+                                </div>
+                                {sortedTasks.length === 0 ? (
+                                    <div className="py-20 text-center flex flex-col items-center gap-4">
+                                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-slate-300">
                                             <Icon.Check />
-                                        </button>
+                                        </div>
+                                        <p className="opacity-30 font-bold">모든 청소가 끝났어요!</p>
                                     </div>
-                                ))
-                            )}
-                        </div>
+                                ) : (
+                                    sortedTasks.map(task => (
+                                        <div key={task.id} className="bg-white rounded-[28px] p-5 shadow-sm border border-slate-100 flex items-center gap-4 active:scale-[0.98] transition-all">
+                                            <div className="flex-1" onClick={() => handleOpenModal('edit', task)}>
+                                                <div className="flex items-center gap-2 text-slate-800">
+                                                    <h3 className="font-bold leading-tight">{task.name}</h3>
+                                                    <Icon.Edit2 />
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                                                        task.status === 'overdue' ? 'bg-red-50 text-red-500' : 
+                                                        task.status === 'today' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-400'
+                                                    }`}>
+                                                        {task.status === 'overdue' ? `지연 D+${task.days}` : task.status === 'today' ? 'TODAY' : `D-${task.days}`}
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-300 font-bold">
+                                                        {task.mode === 'interval' && `${task.frequencyDays}일 주기`}
+                                                        {task.mode === 'weekly' && `매주 ${task.daysOfWeek.map(d => DAYS_KOR[d]).join(',')}`}
+                                                        {task.mode === 'once' && '일회성'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); completeTask(task.id); }}
+                                                className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-100"
+                                            >
+                                                <Icon.Check />
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <h2 className="text-lg font-black text-slate-800 px-1">최근 완료 기록</h2>
+                                {history.length === 0 ? (
+                                    <div className="py-20 text-center opacity-30 font-bold">아직 완료한 청소가 없어요</div>
+                                ) : (
+                                    history.map(h => (
+                                        <div key={h.id} className="bg-white/60 rounded-2xl p-4 flex items-center gap-4 border border-slate-100">
+                                            <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center text-green-500">
+                                                <Icon.Check />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="text-sm font-bold text-slate-800">{h.taskName}</h4>
+                                                <p className="text-[10px] text-slate-400 font-medium">{h.date} • {h.time}</p>
+                                            </div>
+                                            <button onClick={() => deleteHistory(h.id)} className="text-slate-200 p-2">
+                                                <Icon.Trash2 />
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
                     </main>
 
-                    <button 
-                        onClick={() => handleOpenModal('add')}
-                        className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-full font-black shadow-2xl flex items-center gap-2 active:scale-95 transition-transform z-40"
-                    >
-                        <Icon.Plus /> 추가하기
-                    </button>
+                    {/* 플로팅 버튼 - '할 일' 뷰에서만 노출 */}
+                    {view === 'main' && (
+                        <button 
+                            onClick={() => handleOpenModal('add')}
+                            className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-full font-black shadow-2xl flex items-center gap-2 active:scale-95 transition-transform z-40"
+                        >
+                            <Icon.Plus /> 추가하기
+                        </button>
+                    )}
 
+                    {/* 모달 (기존 동일) */}
                     {modal.open && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex flex-col justify-end">
                             <div className="bg-white rounded-t-[40px] p-8 pb-12 animate-slide-up shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
